@@ -88,6 +88,11 @@
       var nodes = tree.nodes(config.json),
         links = tree.links(nodes);
 
+      // Normalize for fixed-depth.
+      nodes.forEach(function(d) {
+        d.y = d.depth * 180;
+      });
+
       var link = svg.selectAll("path.link")
         .data(links)
         .enter().append("path")
