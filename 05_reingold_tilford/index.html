@@ -30,6 +30,7 @@
 
   <script src="//d3js.org/d3.v3.min.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.0.0/jquery.min.js"></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/lodash.js/4.13.1/lodash.min.js"></script>
   <script>
     d3.json("flare.json", function(error, json) {
       if (error) throw error;
@@ -38,6 +39,8 @@
           json: json,
           width: svgEle.width(),
           height: svgEle.height(),
+          minTreeDepthScale: 100,
+          minTreeHeightScale: 80,
           margin: { // Margins that we need within our SVG
             top: 50,
             right: 50,
@@ -50,8 +53,12 @@
     });
 
     function renderTree(config) {
-      var width = 960,
-        height = 2000;
+      var dimentions = computeTreeSize(config),
+        // source = config.data,
+        height = dimentions.height,
+        width = dimentions.width;
+      // var width = 960,
+      //   height = 2000;
 
       var tree = d3.layout.tree()
         .size([height, width]);
@@ -109,6 +116,45 @@
         .text(function(d) {
           return d.name;
         });
+    }
+
+    function computeTreeSize(config){
+
+      var tree = d3.layout.tree(),
+        nodes = tree.nodes(config.json);
+
+      var maxTreeChildrenHeight = {},
+        maxTreeHeight = 0,
+        maxTreeDepth = 0,
+        minSvgWidth,
+        minSvgHeight;
+
+      // Compute the max tree depth(node which is the lowest leaf)
+      nodes.forEach(function(d) {
+          if(d.depth>maxTreeDepth){
+              maxTreeDepth = d.depth;
+          }
+
+          if(!maxTreeChildrenHeight[d.depth]){
+              maxTreeChildrenHeight[d.depth] = 0;
+          }
+
+          maxTreeChildrenHeight[d.depth] = maxTreeChildrenHeight[d.depth]+1;
+      });
+
+      // Compute maximum number of vertical at a level
+      maxTreeHeight = _.max(_.values(maxTreeChildrenHeight));
+
+      // Since this is a horizontal tree, compute the width
+      // based upon the depth and the height based upon
+      // the number of nodes at a depth level
+      minTreeWidth = maxTreeDepth*config.minTreeDepthScale < config.width ? config.width : (maxTreeDepth+1)*config.minTreeDepthScale;
+      minTreeHeight = maxTreeHeight*config.minTreeHeightScale < config.height ? config.height : (maxTreeHeight+1)*config.minTreeHeightScale;
+
+      return {
+        width: minTreeWidth,
+        height: minTreeHeight
+      };
     }
   </script>
 </body>
